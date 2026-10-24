@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}BiteID — Upload & Analyze Bite Mark{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">
+            Forensic <span class="accent">Bite Mark</span> Analysis
+        </h1>
+        <p class="hero-subtitle">
+            Upload a dental impression photograph to identify potential matches
+            from the forensic database using AI-powered computer vision.
+        </p>
+    </div>
+</section>
+
+<!-- Stats Banner -->
+<section class="stats-banner">
+    <div class="stat-card glass-card">
+        <span class="stat-number">{{ subjects|length }}</span>
+        <span class="stat-label">Subjects</span>
+    </div>
+    <div class="stat-card glass-card">
+        <span class="stat-number">{{ db_count }}</span>
+        <span class="stat-label">Samples</span>
+    </div>
+    <div class="stat-card glass-card">
+        <span class="stat-number">4</span>
+        <span class="stat-label">Metrics</span>
+    </div>
+    <div class="stat-card glass-card">
+        <span class="stat-number {% if db_exists %}stat-active{% else %}stat-inactive{% endif %}">
+            {{ "●" if db_exists else "○" }}
+        </span>
+        <span class="stat-label">DB {{ "Ready" if db_exists else "Empty" }}</span>
+    </div>
+</section>
+
+<!-- Upload Section -->
+<section class="upload-section">
+    <div class="upload-container glass-card">
+        <h2 class="section-title">Upload Query Image</h2>
+        <p class="section-desc">
+            Drag & drop a bite mark photograph, or click to browse.
+            Supported formats: JPG, PNG, BMP.
+        </p>
+
+        <form id="uploadForm" action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
+            <div class="dropzone" id="dropzone">
+                <div class="dropzone-content" id="dropzoneContent">
+                    <div class="dropzone-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <p class="dropzone-text">Drop your image here</p>
+                    <p class="dropzone-hint">or click to select a file</p>
+                </div>
+                <div class="dropzone-preview" id="dropzonePreview" style="display: none;">
+                    <img id="previewImg" src="" alt="Preview">
+                    <p id="previewName" class="preview-name"></p>
+                    <button type="button" class="btn btn-outline btn-sm" id="removeFileBtn">Remove</button>
+                </div>
+                <input type="file" name="query_image" id="fileInput" accept=".jpg,.jpeg,.png,.bmp,.tiff" hidden>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" id="analyzeBtn" disabled>
+                <span class="btn-icon">🔍</span>
+                Analyze Bite Mark
+            </button>
+        </form>
+    </div>
+</section>
+
+<!-- How it works -->
+<section class="how-it-works">
+    <h2 class="section-title center">How It Works</h2>
+    <div class="steps-grid">
+        <div class="step-card glass-card">
+            <div class="step-number">01</div>
+            <h3>Upload</h3>
+            <p>Upload a dental wax mold photograph from a crime scene or suspect.</p>
+        </div>
+        <div class="step-card glass-card">
+            <div class="step-number">02</div>
+            <h3>Process</h3>
+            <p>AI extracts tooth impressions using advanced image segmentation and feature extraction.</p>
+        </div>
+        <div class="step-card glass-card">
+            <div class="step-number">03</div>
+            <h3>Match</h3>
+            <p>Multi-metric similarity engine compares against the forensic database.</p>
+        </div>
+        <div class="step-card glass-card">
+            <div class="step-number">04</div>
+            <h3>Explain</h3>
+            <p>XAI module generates visual explanations justifying each match score.</p>
+        </div>
+    </div>
+</section>
+
+{% if not db_exists %}
+<section class="warning-section">
+    <div class="warning-card glass-card">
+        <h3>⚠️ Database Not Built</h3>
+        <p>
+            Run <code>python batch_process.py</code> to process all subjects
+            and build the feature database before using the matching engine.
+        </p>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

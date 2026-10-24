@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}BiteID — Subject Database{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <h1 class="page-title">
+        Subject <span class="accent">Database</span>
+    </h1>
+    <p class="page-subtitle">
+        {{ subjects|length }} subjects registered with dental mold photographs.
+    </p>
+</section>
+
+<section class="database-grid-section">
+    <div class="subjects-grid">
+        {% for subject in subjects %}
+        <a href="{{ url_for('subject_detail', subject_id=subject.id) }}" class="subject-card glass-card">
+            <div class="subject-avatar">
+                <span class="avatar-text">{{ subject.id }}</span>
+            </div>
+            <div class="subject-info">
+                <h3 class="subject-name">Subject ID: {{ subject.id }}</h3>
+                <span class="subject-id">Reference Person #{{ subject.id }}</span>
+                <div class="subject-meta">
+                    <span class="meta-badge">{{ subject.image_count }} impressions</span>
+                    {% for img in subject.images %}
+                    <span class="meta-tag">
+                        {% if "upper" in img.lower() %}Upper Arch{% elif "lower" in img.lower() %}Lower Arch{% else %}Impression{% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="subject-arrow">→</div>
+
+            {% if feature_map.get(subject.id) %}
+            <div class="subject-features-mini">
+                {% for feat in feature_map[subject.id] %}
+                <div class="mini-feat">
+                    <span class="mini-label">{% if "upper" in feat.sample_id.lower() %}Upper Arch{% elif "lower" in feat.sample_id.lower() %}Lower Arch{% else %}Impression{% endif %}</span>
+                    <span class="mini-value">{{ feat.impression_count|int }} imp</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}BiteID — Recent Searches{% endblock %}
+
+{% block content %}
+<section class="history-header">
+    <div class="history-header-inner">
+        <div>
+            <h1 class="page-title">
+                Recent <span class="accent">Searches</span>
+            </h1>
+            <p class="page-subtitle">
+                {% if entries %}
+                    {{ entries|length }} saved analysis {{ 'result' if entries|length == 1 else 'results' }} — click any entry to revisit results.
+                {% else %}
+                    No searches yet. Upload a bite-mark image to get started.
+                {% endif %}
+            </p>
+        </div>
+        {% if entries %}
+        <!-- Clear All button — triggers modal -->
+        <button type="button" class="btn btn-danger-outline btn-sm"
+                onclick="openConfirm('clear', null, 'Clear all search history?', 'This will permanently remove all saved analyses and thumbnails. This cannot be undone.')">
+            <span class="btn-icon">🗑️</span> Clear All
+        </button>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Hidden forms that get submitted by the modal -->
+<form id="formClear"  method="POST" action="{{ url_for('history_clear') }}"  style="display:none;"></form>
+{% for entry in entries %}
+<form id="formDel{{ entry.job_id }}" method="POST"
+      action="{{ url_for('history_delete', job_id=entry.job_id) }}" style="display:none;"></form>
+{% endfor %}
+
+{% if entries %}
+<section class="history-section">
+    <div class="history-list" id="historyList">
+        {% for entry in entries %}
+        {% set tm = entry.top_match %}
+        {% set score = tm.score | float %}
+        <div class="history-card glass-card" id="histEntry{{ loop.index }}">
+
+            <!-- Thumbnail -->
+            <div class="history-thumb">
+                {% if entry.thumb %}
+                <img src="{{ url_for('static', filename='history_thumbs/' + entry.thumb) }}"
+                     alt="Query image" loading="lazy">
+                {% else %}
+                <div class="thumb-placeholder">
+                    <span>🦷</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Info -->
+            <div class="history-info">
+                <div class="history-meta-row">
+                    <span class="history-filename">{{ entry.original_name }}</span>
+                    <span class="history-timestamp">
+                        <span class="ts-icon">🕐</span> {{ entry.timestamp }}
+                    </span>
+                </div>
+
+                <div class="history-stats-row">
+                    <span class="hist-stat">
+                        <span class="hist-stat-val">{{ entry.query_impressions }}</span>
+                        <span class="hist-stat-lbl">impressions</span>
+                    </span>
+                    <span class="hist-stat">
+                        <span class="hist-stat-val">{{ entry.total_matches }}</span>
+                        <span class="hist-stat-lbl">matches</span>
+                    </span>
+                </div>
+
+                <!-- Top Match -->
+                <div class="history-top-match">
+                    <span class="top-match-label">Top Match:</span>
+                    <span class="top-match-name accent">{{ tm.person_name or tm.subject_id }}</span>
+                    <span class="top-match-id">({{ tm.subject_id }})</span>
+                    {% if 'upper' in (tm.sample_id|lower) %}
+                    <span class="arch-tag arch-upper">Upper</span>
+                    {% elif 'lower' in (tm.sample_id|lower) %}
+                    <span class="arch-tag arch-lower">Lower</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Score Ring -->
+            <div class="history-score">
+                <div class="mini-gauge {% if score >= 70 %}gauge-high{% elif score >= 45 %}gauge-medium{% else %}gauge-low{% endif %}">
+                    <svg viewBox="0 0 80 80" class="mini-gauge-svg">
+                        <circle cx="40" cy="40" r="34" class="gauge-bg-mini"/>
+                        <circle cx="40" cy="40" r="34" class="gauge-fill-mini"
+                            style="stroke-dasharray: {{ (score / 100) * 213.6 }} 213.6;"/>  
+                    </svg>
+                    <span class="mini-gauge-text">{{ score }}%</span>
+                </div>
+                <span class="history-score-label">accuracy</span>
+            </div>
+
+            <!-- Actions -->
+            <div class="history-actions">
+                <a href="{{ url_for('results', job_id=entry.job_id) }}"
+                   class="btn btn-primary btn-sm hist-btn" title="View results">
+                    <span>🔍</span> View
+                </a>
+                <button type="button" class="btn btn-ghost-sm hist-btn" title="Delete entry"
+                        onclick="openConfirm('delete', '{{ entry.job_id }}', 'Remove this entry?', 'This analysis will be removed from your history.')">
+                    <span>✕</span> Delete
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% else %}
+<!-- Empty State -->
+<section class="history-empty-section">
+    <div class="glass-card history-empty-card">
+        <div class="empty-icon">🕐</div>
+        <h2>No Recent Searches</h2>
+        <p>Analyses you run will appear here automatically, saved with the query image thumbnail, top match, and accuracy score.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary" style="margin-top: 24px;">
+            <span class="btn-icon">📤</span> Analyze a Bite Mark
+        </a>
+    </div>
+</section>
+{% endif %}
+
+<!-- Back to Analyze -->
+<section class="actions-section">
+    <a href="{{ url_for('index') }}" class="btn btn-outline">
+        <span class="btn-icon">📤</span> New Analysis
+    </a>
+    <a href="{{ url_for('database') }}" class="btn btn-outline">
+        <span class="btn-icon">🗄️</span> Database
+    </a>
+</section>
+
+<!-- ============================================================
+     Custom Confirmation Modal (replaces browser confirm())
+     ============================================================ -->
+<div class="confirm-overlay" id="confirmOverlay" aria-modal="true" role="dialog">
+    <div class="confirm-modal glass-card">
+        <div class="confirm-icon" id="confirmIcon">⚠️</div>
+        <h3 class="confirm-title" id="confirmTitle">Are you sure?</h3>
+        <p  class="confirm-body"  id="confirmBody">This action cannot be undone.</p>
+        <div class="confirm-actions">
+            <button class="btn btn-outline btn-sm" id="confirmCancel" onclick="closeConfirm()">
+                Cancel
+            </button>
+            <button class="btn btn-danger btn-sm" id="confirmOk" onclick="doConfirm()">
+                Yes, Delete
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ---- Confirmation modal logic ----
+let _pendingAction = null;   // 'clear' | 'delete'
+let _pendingJobId  = null;
+
+function openConfirm(action, jobId, title, body) {
+    _pendingAction = action;
+    _pendingJobId  = jobId;
+
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmBody').textContent  = body;
+
+    const okBtn = document.getElementById('confirmOk');
+    if (action === 'clear') {
+        okBtn.textContent = '🗑️  Yes, Clear All';
+        document.getElementById('confirmIcon').textContent = '🗑️';
+    } else {
+        okBtn.textContent = '✕  Yes, Remove';
+        document.getElementById('confirmIcon').textContent = '⚠️';
+    }
+
+    const overlay = document.getElementById('confirmOverlay');
+    overlay.classList.add('active');
+    // Trap focus on Cancel by default
+    document.getElementById('confirmCancel').focus();
+}
+
+function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('active');
+    _pendingAction = null;
+    _pendingJobId  = null;
+}
+
+function doConfirm() {
+    if (_pendingAction === 'clear') {
+        document.getElementById('formClear').submit();
+    } else if (_pendingAction === 'delete' && _pendingJobId) {
+        document.getElementById('formDel' + _pendingJobId).submit();
+    }
+    closeConfirm();
+}
+
+// Close on overlay background click
+document.getElementById('confirmOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeConfirm();
+});
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeConfirm();
+});
+
+// ---- Card entrance animation ----
+document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('.history-card');
+    cards.forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(24px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.45s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.opacity   = '1';
+            card.style.transform = 'translateY(0)';
+        }, 60 * i);
+    });
+});
+</script>
+{% endblock %}

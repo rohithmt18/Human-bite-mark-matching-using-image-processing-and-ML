@@ -1,0 +1,9 @@
+{
+  "name": "biteid-forensic-system",
+  "version": "2.0.0",
+  "description": "BiteID — Forensic bite-mark analysis dashboard with Explainable AI",
+  "scripts": {
+    "start": "cmd /c run.bat",
+    "dev": "cmd /c run.bat"
+  }
+}

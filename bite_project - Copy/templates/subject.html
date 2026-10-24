@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}BiteID — Subject ID: {{ subject_id }}{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="breadcrumb">
+        <a href="{{ url_for('database') }}">Database</a>
+        <span class="breadcrumb-sep">›</span>
+        <span>Subject {{ subject_id }}</span>
+    </div>
+    <h1 class="page-title">
+        Subject ID: <span class="accent">{{ subject_id }}</span>
+        <span class="subject-badge">Registered Person</span>
+    </h1>
+</section>
+
+<!-- Original Images -->
+<section class="subject-images-section">
+    <h2 class="section-title">Dental Mold Impressions</h2>
+    <div class="image-gallery">
+        {% for img in images %}
+        <div class="gallery-card glass-card">
+            <img src="{{ url_for('serve_dataset_image', subject_id=subject_id, filename=img) }}"
+                 alt="{{ img }}" loading="lazy" class="gallery-img">
+            <div class="gallery-label">
+                <span class="img-name">{% if "upper" in img.lower() %}Upper Jaw Arch{% elif "lower" in img.lower() %}Lower Jaw Arch{% else %}Reference Arch{% endif %}</span>
+                <span class="jaw-type">
+                    {% if "upper" in img.lower() %}🔼 Upper Arch{% elif "lower" in img.lower() %}🔽 Lower Arch{% endif %}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Extracted Features -->
+{% if features %}
+<section class="features-section">
+    <h2 class="section-title">Extracted Features</h2>
+    {% for feat in features %}
+    <div class="glass-card feature-detail-card">
+        <h3 class="feature-sample-name">{% if "upper" in feat.sample_id.lower() %}Upper Arch Features{% elif "lower" in feat.sample_id.lower() %}Lower Arch Features{% else %}Impression Features{% endif %}</h3>
+        <div class="feature-grid">
+            <div class="feat-item">
+                <span class="feat-value">{{ feat.impression_count|int }}</span>
+                <span class="feat-label">Impressions</span>
+            </div>
+            <div class="feat-item">
+                <span class="feat-value">{{ feat.bite_width|round(0)|int }}</span>
+                <span class="feat-label">Width (px)</span>
+            </div>
+            <div class="feat-item">
+                <span class="feat-value">{{ feat.bite_height|round(0)|int }}</span>
+                <span class="feat-label">Height (px)</span>
+            </div>
+            <div class="feat-item">
+                <span class="feat-value">{{ feat.avg_spacing }}</span>
+                <span class="feat-label">Avg Spacing</span>
+            </div>
+            <div class="feat-item">
+                <span class="feat-value">{{ feat.total_area|round(0)|int }}</span>
+                <span class="feat-label">Total Area</span>
+            </div>
+            <div class="feat-item">
+                <span class="feat-value">{{ feat.avg_aspect_ratio }}</span>
+                <span class="feat-label">Avg Aspect</span>
+            </div>
+            <div class="feat-item">
+                <span class="feat-value">{{ feat.avg_solidity }}</span>
+                <span class="feat-label">Avg Solidity</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- Processing Stages -->
+{% if processed %}
+<section class="processing-section">
+    <h2 class="section-title">Processing Pipeline</h2>
+    {% for sample_name, imgs in processed.items() %}
+    <div class="glass-card pipeline-card">
+        <h3>{{ sample_name }}</h3>
+        <div class="pipeline-grid">
+            {% for img_name in imgs|sort %}
+            <div class="pipeline-img-card">
+                <img src="{{ url_for('serve_result_image', subject_id=subject_id, filepath=sample_name + '/' + img_name) }}"
+                     alt="{{ img_name }}" loading="lazy">
+                <span class="pipeline-label">{{ img_name }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- Back -->
+<section class="actions-section">
+    <a href="{{ url_for('database') }}" class="btn btn-outline">
+        <span class="btn-icon">←</span> Back to Database
+    </a>
+</section>
+{% endblock %}

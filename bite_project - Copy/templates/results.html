@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}BiteID — Match Results{% endblock %}
+
+{% block content %}
+<section class="results-header">
+    <h1 class="page-title">
+        Analysis <span class="accent">Results</span>
+    </h1>
+    <p class="page-subtitle">
+        Query processed — {{ results.query_impressions }} tooth impressions detected.
+    </p>
+</section>
+
+<!-- Query Summary -->
+<section class="query-summary">
+    <div class="glass-card summary-card">
+        <h2 class="card-title">Query Summary</h2>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <span class="summary-value">{{ results.query_summary.impression_count }}</span>
+                <span class="summary-label">Impressions</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-value">{{ results.query_summary.bite_width|round(0)|int }}</span>
+                <span class="summary-label">Bite Width (px)</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-value">{{ results.query_summary.bite_height|round(0)|int }}</span>
+                <span class="summary-label">Bite Height (px)</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-value">{{ results.query_summary.avg_spacing }}</span>
+                <span class="summary-label">Avg Spacing</span>
+            </div>
+        </div>
+
+        <!-- Debug images toggle -->
+        {% if debug_images %}
+        <div class="debug-section">
+            <button class="btn btn-outline btn-sm toggle-btn" id="toggleDebug"
+                onclick="toggleSection('debugImages', this)">
+                Show Processing Steps
+            </button>
+            <div class="debug-images" id="debugImages" style="display: none;">
+                <div class="debug-grid">
+                    {% for fname, path in debug_images.items() %}
+                    <div class="debug-img-card">
+                        <img src="{{ path }}" alt="{{ fname }}" loading="lazy">
+                        <span class="debug-label">{{ fname }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Match Results -->
+<section class="matches-section">
+    <h2 class="section-title">Forensic Identification Results</h2>
+
+    {% if results.matches %}
+    {% set name_map = {
+    'P001': 'Rohith',
+    'P002': 'Shravya',
+    'P003': 'Drithika',
+    'P004': 'Vyshnavi',
+    'P005': 'Sonika',
+    'P006': 'Akash',
+    'P007': 'Rameeza',
+    'P008': 'Yashas',
+    'P009': 'Rishi',
+    'P010': 'Vishmaya',
+    'P011': 'Mounesh',
+    'P012': 'Prateeksha'
+    } %}
+    {% set top_person = results.matches[0].person_name or name_map.get(results.matches[0].subject_id,
+    results.matches[0].subject_id) %}
+    <!-- Top Match AI Identification Verdict Banner -->
+    <div class="glass-card match-verdict-banner"
+        style="margin-bottom: 24px; padding: 24px; border-left: 5px solid var(--accent); background: rgba(30, 41, 59, 0.7);">
+        <div
+            style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <span class="badge"
+                    style="background: rgba(0, 200, 200, 0.2); color: var(--accent); font-weight: 600; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem;">
+                    ★ Top Forensic Match Identified
+                </span>
+                <h2 style="font-size: 1.8rem; margin: 10px 0 6px; font-weight: 800;">
+                    Matched Candidate: <span class="accent">{{ top_person }}</span> <span
+                        style="font-size: 1.1rem; color: var(--text-muted); font-weight: normal;">(Person ID: {{
+                        results.matches[0].subject_id }})</span>
+                </h2>
+                <p style="color: var(--text-secondary); margin: 0; font-size: 0.95rem;">
+                    Matching Dental Arch:
+                    <strong>
+                        {% if 'upper' in results.matches[0].sample_id|lower %}Upper Arch Impression{% elif 'lower' in
+                        results.matches[0].sample_id|lower %}Lower Arch Impression{% else %}Reference Impression{% endif
+                        %}
+                    </strong>
+                </p>
+            </div>
+            <div style="text-align: right;">
+                <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Overall Match Accuracy
+                    Score</span>
+                <span style="font-size: 2.2rem; font-weight: 900; color: var(--accent);">{{ results.matches[0].score
+                    }}%</span>
+            </div>
+        </div>
+        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
+            <h4 style="font-size: 0.95rem; color: var(--text-primary); margin-bottom: 6px;">🧠 Explainable AI Match
+                Justification:</h4>
+            <p style="color: var(--text-secondary); line-height: 1.5; margin: 0; font-size: 0.92rem;">
+                The query bite mark exhibits strong individualizing correspondence with <strong>{{ top_person }} (Person
+                    ID: {{
+                    results.matches[0].subject_id }})</strong>
+                at an overall confidence of <strong>{{ results.matches[0].score }}%</strong>.
+                {% if (results.matches[0].breakdown.spacing | float) >= 60 and (results.matches[0].breakdown.hu_moments
+                | float) >= 60 %}
+                The primary forensic drivers are congruent inter-tooth spacing intervals ({{
+                results.matches[0].breakdown.spacing }}%) and matching tooth contour geometries ({{
+                results.matches[0].breakdown.hu_moments }}%), supported by structural arch alignment ({{
+                results.matches[0].breakdown.structural }}%).
+                {% elif (results.matches[0].breakdown.spacing | float) >= 60 %}
+                The primary forensic correspondence is the distinctive dental spacing pattern ({{
+                results.matches[0].breakdown.spacing }}%) along the arch.
+                {% else %}
+                The identification is supported by dental arch geometry ({{ results.matches[0].breakdown.structural }}%)
+                and deep visual embedding alignment ({{ results.matches[0].breakdown.coatnet }}%).
+                {% endif %}
+            </p>
+
+            <!-- Matched Person Name at the end of top result -->
+            <div
+                style="margin-top: 18px; padding: 14px 20px; background: rgba(0, 180, 216, 0.12); border: 1.5px solid rgba(0, 180, 216, 0.35); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <span
+                        style="font-size: 0.78rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; display: block; margin-bottom: 2px;">
+                        Matched Person Name ({{ top_person }})
+                    </span>
+                    <span style="font-size: 1.45rem; font-weight: 800; color: #ffffff;">
+                        👤 {{ top_person }}
+                    </span>
+                    <span style="font-size: 0.9rem; color: var(--accent); margin-left: 8px;">(Person ID: {{
+                        results.matches[0].subject_id }})</span>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Overall Accuracy Score</span>
+                    <span style="font-size: 1.25rem; font-weight: 800; color: var(--accent);">{{
+                        results.matches[0].score }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranked Matches List -->
+    <div class="matches-list">
+        {% for match in results.matches %}
+        {% set m_person = match.person_name or name_map.get(match.subject_id, match.subject_id) %}
+        <div class="match-card glass-card {% if match.score >= 70 %}match-high{% elif match.score >= 45 %}match-medium{% else %}match-low{% endif %}"
+            id="matchCard{{ match.rank }}">
+
+            <div class="match-header">
+                <div class="match-rank">
+                    <span class="rank-number">#{{ match.rank }}</span>
+                </div>
+                <div class="match-info">
+                    <h3 class="match-name">
+                        Matched Person: <span class="accent">{{ m_person }}</span>
+                        <span
+                            style="color: var(--text-muted); font-size: 0.95rem; font-weight: normal; margin-left: 6px;">({{
+                            match.subject_id }})</span>
+                        {% if 'upper' in match.sample_id|lower %}
+                        <span class="meta-tag"
+                            style="background: rgba(0, 180, 216, 0.15); color: #00b4d8; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">Upper
+                            Arch</span>
+                        {% elif 'lower' in match.sample_id|lower %}
+                        <span class="meta-tag"
+                            style="background: rgba(42, 157, 143, 0.15); color: #2a9d8f; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">Lower
+                            Arch</span>
+                        {% endif %}
+                    </h3>
+                    <span class="match-impressions">{{ match.impression_count }} registered tooth impressions</span>
+                </div>
+                <div class="match-score">
+                    <div class="score-gauge" data-score="{{ match.score }}">
+                        <svg viewBox="0 0 120 120" class="gauge-svg">
+                            <circle cx="60" cy="60" r="52" class="gauge-bg" />
+                            <circle cx="60" cy="60" r="52" class="gauge-fill"
+                                style="stroke-dasharray: {{ (match.score / 100) * 326.7 }} 326.7;" />
+                        </svg>
+                        <span class="gauge-text">{{ match.score }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5-Metric Breakdown Bars -->
+            <div class="match-breakdown"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+                <div class="breakdown-bar">
+                    <span class="breakdown-label">Structural</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ match.breakdown.structural }}%"></div>
+                    </div>
+                    <span class="breakdown-value">{{ match.breakdown.structural }}%</span>
+                </div>
+                <div class="breakdown-bar">
+                    <span class="breakdown-label">Tooth Shape (Hu)</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ match.breakdown.hu_moments }}%"></div>
+                    </div>
+                    <span class="breakdown-value">{{ match.breakdown.hu_moments }}%</span>
+                </div>
+                <div class="breakdown-bar">
+                    <span class="breakdown-label">Tooth Spacing</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ match.breakdown.spacing }}%"></div>
+                    </div>
+                    <span class="breakdown-value">{{ match.breakdown.spacing }}%</span>
+                </div>
+                <div class="breakdown-bar">
+                    <span class="breakdown-label">Impression Count</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ match.breakdown.count }}%"></div>
+                    </div>
+                    <span class="breakdown-value">{{ match.breakdown.count }}%</span>
+                </div>
+                {% if match.breakdown.coatnet is defined %}
+                <div class="breakdown-bar">
+                    <span class="breakdown-label">CoAtNet Deep</span>
+                    <div class="bar-track">
+                        <div class="bar-fill" style="width: {{ match.breakdown.coatnet }}%"></div>
+                    </div>
+                    <span class="breakdown-value">{{ match.breakdown.coatnet }}%</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- XAI Section -->
+            {% if match.rank <= 5 and radar_images.get(match.rank) %} <div class="xai-section">
+                <button class="btn btn-outline btn-sm toggle-btn" onclick="toggleSection('xai{{ match.rank }}', this)">
+                    Show AI Explanation for {{ m_person }} ({{ match.subject_id }})
+                </button>
+                <div class="xai-content" id="xai{{ match.rank }}" style="display: none;">
+                    <div class="xai-grid">
+                        <div class="xai-chart">
+                            <h4>Similarity Radar (5 Dimensions)</h4>
+                            <img src="{{ radar_images[match.rank] }}" alt="Radar Chart for {{ m_person }}"
+                                loading="lazy">
+                        </div>
+                        <div class="xai-details">
+                            <h4>Why {{ m_person }} (Person ID: {{ match.subject_id }}) Matched (Score: {{
+                                match.score }}%)</h4>
+                            <ul class="justification-list">
+                                {% if (match.breakdown.spacing | float) >= 60 %}
+                                <li class="justify-good">✓ <strong>Tooth Spacing ({{ match.breakdown.spacing
+                                        }}%):</strong> Inter-tooth gap intervals strongly correlate along the dental
+                                    arch sequence.</li>
+                                {% else %}
+                                <li class="justify-warn">△ <strong>Tooth Spacing ({{ match.breakdown.spacing
+                                        }}%):</strong> Moderate sequence deviation in relative inter-tooth gaps.</li>
+                                {% endif %}
+
+                                {% if (match.breakdown.hu_moments | float) >= 60 %}
+                                <li class="justify-good">✓ <strong>Tooth Contours ({{ match.breakdown.hu_moments
+                                        }}%):</strong> Log-transformed Hu moments confirm high shape curvature and
+                                    elongation match.</li>
+                                {% else %}
+                                <li class="justify-warn">△ <strong>Tooth Contours ({{ match.breakdown.hu_moments
+                                        }}%):</strong> Individual tooth imprint curvatures show morphological variation.
+                                </li>
+                                {% endif %}
+
+                                {% if (match.breakdown.structural | float) >= 60 %}
+                                <li class="justify-good">✓ <strong>Arch Structure ({{ match.breakdown.structural
+                                        }}%):</strong> Bounding bite dimensions and arch perimeter proportions align
+                                    well.</li>
+                                {% else %}
+                                <li class="justify-warn">△ <strong>Arch Structure ({{ match.breakdown.structural
+                                        }}%):</strong> Dimensional proportions show arch-level divergence.</li>
+                                {% endif %}
+
+                                {% if (match.breakdown.count | float) >= 80 %}
+                                <li class="justify-good">✓ <strong>Impression Count ({{ match.breakdown.count
+                                        }}%):</strong> Number of detected tooth indentations is highly consistent.</li>
+                                {% else %}
+                                <li class="justify-warn">△ <strong>Impression Count ({{ match.breakdown.count
+                                        }}%):</strong> Difference in registered tooth impressions.</li>
+                                {% endif %}
+
+                                {% if match.breakdown.coatnet is defined %}
+                                {% if (match.breakdown.coatnet | float) >= 70 %}
+                                <li class="justify-good">✓ <strong>Deep Features ({{ match.breakdown.coatnet
+                                        }}%):</strong> CoAtNet neural representation corroborates global morphology
+                                    match.</li>
+                                {% else %}
+                                <li class="justify-warn">△ <strong>Deep Features ({{ match.breakdown.coatnet
+                                        }}%):</strong> Deep embedding cosine similarity shows lower visual alignment.
+                                </li>
+                                {% endif %}
+                                {% endif %}
+                            </ul>
+                            {% if report_images and report_images.get(match.rank) %}
+                            <div style="margin-top: 14px;">
+                                <a href="{{ report_images[match.rank] }}" target="_blank" class="btn btn-sm btn-outline"
+                                    style="font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 6px;">
+                                    <span>🔍</span> View Full Metric Comparison & Feature Table
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+        </div>
+        {% endif %}
+
+        <!-- Matched Person identification footer for candidate -->
+        <div
+            style="margin-top: 14px; padding: 10px 16px; background: rgba(255,255,255,0.03); border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem;">
+            <span>👤 Matched Person: <strong style="color: #fff;">{{ m_person }}</strong> <span
+                    style="color: var(--text-muted); font-size: 0.8rem;">(Person ID: {{ match.subject_id
+                    }})</span></span>
+            <span>Accuracy Score: <strong style="color: var(--accent);">{{ match.score }}%</strong></span>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass-card empty-state">
+        <h3>No Matches Found</h3>
+        <p>The database may be empty. Run <code>python batch_process.py</code> first.</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Actions -->
+<section class="actions-section">
+    <a href="{{ url_for('index') }}" class="btn btn-primary">
+        <span class="btn-icon">📤</span> Analyze Another
+    </a>
+    <a href="{{ url_for('database') }}" class="btn btn-outline">
+        <span class="btn-icon">🗄️</span> View Database
+    </a>
+</section>
+{% endblock %}
